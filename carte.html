@@ -181,7 +181,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }).join('');
     var query = '[out:json][timeout:25];('+parts+');out center 50;';
     try {
-      var res = await fetch('https://overpass-api.de/api/interpreter', {
+      var res = await fetch('https://overpass.openstreetmap.ru/api/interpreter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'data=' + encodeURIComponent(query)
