@@ -181,7 +181,11 @@ window.addEventListener('DOMContentLoaded', function () {
     }).join('');
     var query = '[out:json][timeout:25];('+parts+');out center 50;';
     try {
-      var res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
+      var res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
       if (!res.ok) return [];
       var data = await res.json();
       return (data.elements||[]).map(function(e) {
