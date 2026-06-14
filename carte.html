@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carte d'accessibilité aux services de proximité</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    #page-title { text-align: center; font-size: 18px; font-weight: 600; color: #222; padding: 10px 0 8px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+    #main { display: flex; flex-direction: row; flex: 1; min-height: 0; overflow: hidden; }
+    #map-container { flex: 1; min-width: 0; position: relative; }
+    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+    #sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 1px solid #e0e0e0; background: #fff; overflow-y: auto; }
+    #addr-box { background: #fff5f5; border-bottom: 1px solid #fcc; padding: 12px 14px; flex-shrink: 0; }
+    #addr-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    #addr-header-left { font-size: 13px; font-weight: 600; color: #c0392b; }
+    #edit-btn { background: none; border: none; cursor: pointer; font-size: 15px; color: #aaa; padding: 0; }
+    #edit-btn:hover { color: #555; }
+    #addr-display { font-size: 12px; color: #333; margin-bottom: 2px; }
+    #addr-quartier { font-size: 11px; color: #888; }
+    #addr-form { display: none; margin-top: 8px; }
+    #addr-input { width: 100%; font-size: 12px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; outline: none; box-sizing: border-box; }
+    #addr-input:focus { border-color: #3B82F6; }
+    #addr-submit { width: 100%; font-size: 12px; padding: 5px 0; background: #3B82F6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    #addr-submit:hover { background: #2563eb; }
+    #addr-error { font-size: 11px; color: #e53e3e; margin-top: 4px; display: none; }
+    #loading-bar { display: none; background: #fffbeb; border-bottom: 1px solid #fcd34d; padding: 6px 14px; font-size: 11px; color: #92400e; flex-shrink: 0; align-items: center; gap: 8px; }
+    #loading-bar.visible { display: flex; }
+    .spinner { width: 12px; height: 12px; border: 2px solid #fcd34d; border-top-color: #92400e; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #detail-box { padding: 12px 14px; flex: 1; }
+    #detail-label { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+    #detail-content { font-size: 12px; color: #555; line-height: 1.6; }
+    .detail-svc-name { font-size: 13px; font-weight: 600; color: #222; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .detail-row { color: #555; margin-bottom: 3px; }
+    .detail-row span { color: #888; }
+    .detail-gmaps { font-size: 12px; color: #3B82F6; text-decoration: none; display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+    .detail-gmaps:hover { text-decoration: underline; }
+    #bottom { background: #fff; border-top: 1px solid #e0e0e0; padding: 10px 14px 12px; flex-shrink: 0; }
+    #bottom-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    #bottom-title { font-size: 13px; font-weight: 600; color: #222; }
+    #rayon-row { display: flex; align-items: center; gap: 6px; }
+    #rayon-label { font-size: 11px; color: #888; }
+    .rayon-btn { font-size: 11px; padding: 3px 10px; border: 1px solid #ccc; border-radius: 5px; background: white; color: #555; cursor: pointer; }
+    .rayon-btn.active { background: #3B82F6; color: white; border-color: #3B82F6; font-weight: 600; }
+    .rayon-btn:hover:not(.active) { background: #f0f0f0; }
+    #cats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .cat-title { font-size: 11px; font-weight: 600; margin-bottom: 5px; }
+    .svc-entry { margin-bottom: 7px; }
+    .svc-line { font-size: 10px; color: #333; cursor: pointer; display: flex; align-items: flex-start; gap: 3px; line-height: 1.3; }
+    .svc-line:hover { color: #3B82F6; }
+    .svc-line.selected { color: #3B82F6; font-weight: 600; }
+    .svc-count { font-size: 9px; color: #aaa; font-style: italic; margin-top: 2px; }
+    .svc-empty { font-size: 10px; color: #bbb; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div id="page-title">Carte d'accessibilité aux services de proximité</div>
+
+<div id="main">
+  <div id="map-container"><div id="map"></div></div>
+  <div id="sidebar">
+    <div id="addr-box">
+      <div id="addr-header">
+        <div id="addr-header-left">📍 Adresse</div>
+        <button id="edit-btn" title="Modifier l'adresse">✏️</button>
+      </div>
+      <div id="addr-display">Aucune adresse saisie</div>
+      <div id="addr-quartier"></div>
+      <div id="addr-form">
+        <input id="addr-input" type="text" placeholder="Ex: Avenue de Cour 15, Lausanne" />
+        <button id="addr-submit">Rechercher</button>
+        <div id="addr-error">Adresse introuvable, essayez d'être plus précis.</div>
+      </div>
+    </div>
+    <div id="loading-bar"><div class="spinner"></div><span id="loading-text">Chargement...</span></div>
+    <div id="detail-box">
+      <div id="detail-label">Détails du service sélectionné</div>
+      <div id="detail-content">Saisissez une adresse pour voir les services à proximité.</div>
+    </div>
+  </div>
+</div>
+
+<div id="bottom">
+  <div id="bottom-header">
+    <div id="bottom-title">Services de proximité et indicateurs locaux</div>
+    <div id="rayon-row">
+      <span id="rayon-label">Rayon d'analyse :</span>
+      <button class="rayon-btn" data-r="250">250 m</button>
+      <button class="rayon-btn active" data-r="500">500 m</button>
+      <button class="rayon-btn" data-r="800">800 m</button>
+    </div>
+  </div>
+  <div id="cats-grid">
+    <div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+
+  var VAUD_CENTER = [46.6, 6.7];
+  var VAUD_ZOOM = 10;
+
+  var CATEGORIES = [
+    { id: 'edu', label: 'Éducation', color: '#f59e0b', svcs: [
+      { id: 'ecole',   label: 'École',          emoji: '🏫', tags: [['amenity','school'],['amenity','kindergarten']] },
+      { id: 'creche',  label: 'Crèche',         emoji: '🍼', tags: [['amenity','childcare']] }
+    ]},
+    { id: 'mob', label: 'Mobilité', color: '#3B82F6', svcs: [
+      { id: 'bus',     label: 'Arrêt de bus',   emoji: '🚌', tags: [['highway','bus_stop'],['public_transport','platform']] },
+      { id: 'metro',   label: 'Métro / Tram',   emoji: '🚇', tags: [['railway','tram_stop'],['railway','station']] }
+    ]},
+    { id: 'quot', label: 'Services du quotidien', color: '#10b981', svcs: [
+      { id: 'pharma',  label: 'Pharmacie',      emoji: '💊', tags: [['amenity','pharmacy']] },
+      { id: 'super',   label: 'Supermarché',    emoji: '🛒', tags: [['shop','supermarket'],['shop','convenience']] }
+    ]},
+    { id: 'resto', label: 'Restauration', color: '#ef4444', svcs: [
+      { id: 'restau',  label: 'Restaurant',     emoji: '🍽️', tags: [['amenity','restaurant'],['amenity','fast_food']] },
+      { id: 'boulang', label: 'Boulangerie',    emoji: '🥐', tags: [['shop','bakery']] }
+    ]},
+    { id: 'loisir', label: 'Environnement & loisirs', color: '#8b5cf6', svcs: [
+      { id: 'parc',    label: 'Parc',           emoji: '🌳', tags: [['leisure','park'],['leisure','garden']] },
+      { id: 'sport',   label: 'Salle de sport', emoji: '🏋️', tags: [['leisure','fitness_centre'],['leisure','sports_centre']] }
+    ]}
+  ];
+
+  var map, circleLayer = null, refMarker = null;
+  var markers = [];
+  var allData = {};
+  var currentRadius = 500;
+  var currentRef = null;
+  var selectedSvcId = null;
+
+  map = L.map('map').setView(VAUD_CENTER, VAUD_ZOOM);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+
+  function haversine(lat1, lng1, lat2, lng2) {
+    var R = 6371000;
+    var dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+  }
+
+  async function geocode(address) {
+    var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address) + '&countrycodes=ch&limit=1&accept-language=fr';
+    try {
+      var res = await fetch(url, { headers: { 'User-Agent': 'CarteImmo/1.0' } });
+      var data = await res.json();
+      if (!data.length) return null;
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    } catch(e) { return null; }
+  }
+
+  async function reverseGeocode(lat, lng) {
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&addressdetails=1&accept-language=fr';
+    try {
+      var res = await fetch(url, { headers: { 'User-Agent': 'CarteImmo/1.0' } });
+      var data = await res.json();
+      var a = data.address || {};
+      var road = a.road || '', num = a.house_number || '';
+      var city = a.city || a.town || a.village || '';
+      var postcode = a.postcode || '';
+      var suburb = a.suburb || a.neighbourhood || a.quarter || '';
+      var street = road ? (num ? num + ' ' + road : road) + ', ' + postcode + ' ' + city : (data.display_name||'').split(',').slice(0,2).join(',');
+      return { street: street.trim(), quartier: (suburb ? suburb + ', ' + city : city).trim() };
+    } catch(e) { return { street: lat.toFixed(4)+','+lng.toFixed(4), quartier: '' }; }
+  }
+
+  async function queryOverpass(lat, lng, radius, tags) {
+    var parts = tags.map(function(t) {
+      return 'node["'+t[0]+'"="'+t[1]+'"](around:'+radius+','+lat+','+lng+');'+
+             'way["'+t[0]+'"="'+t[1]+'"](around:'+radius+','+lat+','+lng+');';
+    }).join('');
+    var query = '[out:json][timeout:25];('+parts+');out center 50;';
+    try {
+      var res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
+      if (!res.ok) return [];
+      var data = await res.json();
+      return (data.elements||[]).map(function(e) {
+        return { id:e.id, name:(e.tags&&(e.tags.name||e.tags['name:fr']))||'Sans nom',
+          lat:e.lat||(e.center&&e.center.lat), lon:e.lon||(e.center&&e.center.lon), tags:e.tags||{} };
+      }).filter(function(e){ return e.lat&&e.lon; });
+    } catch(e) { return []; }
+  }
+
+  function makeEmojiIcon(emoji, highlighted) {
+    var size = highlighted?32:26, bg = highlighted?'#3B82F6':'white';
+    var border = highlighted?'#1d4ed8':'#999', fs = highlighted?15:12;
+    return L.divIcon({
+      html: '<div style="background:'+bg+';border:2px solid '+border+';border-radius:50%;width:'+size+'px;height:'+size+'px;display:flex;align-items:center;justify-content:center;font-size:'+fs+'px;box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:pointer">'+emoji+'</div>',
+      className:'', iconSize:[size,size], iconAnchor:[size/2,size/2]
+    });
+  }
+
+  function getSvcById(id) {
+    for (var i=0;i<CATEGORIES.length;i++)
+      for (var j=0;j<CATEGORIES[i].svcs.length;j++)
+        if (CATEGORIES[i].svcs[j].id===id) return CATEGORIES[i].svcs[j];
+    return null;
+  }
+
+  function showDetail(svcId) {
+    selectedSvcId = svcId;
+    var svc = getSvcById(svcId), d = allData[svcId];
+    if (!svc||!d||!d.length) return;
+    var top = d[0];
+    var gmaps = 'https://www.google.com/maps/search/?api=1&query='+top.lat+','+top.lon;
+    var addrStr = top.tags['addr:street']
+      ? ((top.tags['addr:housenumber']||'')+' '+top.tags['addr:street']+', '+(top.tags['addr:city']||'')).trim()
+      : 'Lausanne';
+    document.getElementById('detail-content').innerHTML =
+      '<div class="detail-svc-name"><span style="font-size:18px">'+svc.emoji+'</span> '+svc.label+' : '+top.name+'</div>'+
+      '<div class="detail-row"><span>Adresse : </span>'+addrStr+'</div>'+
+      '<div class="detail-row"><span>Distance : </span>'+top.dist+' m (≈ '+Math.round(top.dist/80)+' min à pied)</div>'+
+      '<a class="detail-gmaps" href="'+gmaps+'" target="_blank">🗺️ Ouvrir dans Google Maps ↗</a>';
+    refreshMarkers(); refreshTable();
+  }
+  window._showDetail = showDetail;
+
+  function refreshMarkers() {
+    markers.forEach(function(m){map.removeLayer(m);}); markers=[];
+    if (!currentRef) return;
+    CATEGORIES.forEach(function(cat) {
+      cat.svcs.forEach(function(svc) {
+        var d=allData[svc.id]; if(!d||!d.length) return;
+        var top=d[0], isSel=selectedSvcId===svc.id;
+        var m=L.marker([top.lat,top.lon],{icon:makeEmojiIcon(svc.emoji,isSel)}).addTo(map);
+        m.bindTooltip(svc.label+' : '+top.name+' — '+top.dist+' m',{permanent:false,direction:'top',offset:[0,-10]});
+        m.on('click',(function(id){return function(){showDetail(id);};})(svc.id));
+        markers.push(m);
+      });
+    });
+  }
+
+  function refreshTable() {
+    var grid=document.getElementById('cats-grid');
+    if (!currentRef) { grid.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>'; return; }
+    grid.innerHTML=CATEGORIES.map(function(cat){
+      return '<div class="cat-col"><div class="cat-title" style="color:'+cat.color+'">'+cat.label+'</div>'+
+        cat.svcs.map(function(svc){
+          var d=allData[svc.id]||[], top=d[0], isSel=selectedSvcId===svc.id;
+          if (!top) return '<div class="svc-entry"><div class="svc-line"><span>'+svc.emoji+'</span><span class="svc-empty">'+svc.label+' : aucun dans ce rayon</span></div><div class="svc-count">Nombre total du service dans le rayon sélectionné : 0</div></div>';
+          return '<div class="svc-entry"><div class="svc-line '+(isSel?'selected':'')+'" onclick="window._showDetail(\''+svc.id+'\')"><span>'+svc.emoji+'</span><span>'+svc.label+' : '+top.name+' — '+top.dist+' m</span></div><div class="svc-count">Nombre total du service dans le rayon sélectionné : '+d.length+'</div></div>';
+        }).join('')+'</div>';
+    }).join('');
+  }
+
+  function setLoading(text) {
+    var bar=document.getElementById('loading-bar');
+    if (text){bar.classList.add('visible');document.getElementById('loading-text').textContent=text;}
+    else{bar.classList.remove('visible');}
+  }
+
+  async function loadAllServices() {
+    if (!currentRef) return;
+    allData={}; selectedSvcId=null;
+    document.getElementById('detail-content').innerHTML='<span style="font-size:11px;color:#aaa;font-style:italic">Chargement en cours...</span>';
+    var svcs=[]; CATEGORIES.forEach(function(cat){cat.svcs.forEach(function(s){svcs.push(s);});});
+    var done=0; setLoading('Chargement des services... (0/'+svcs.length+')'); refreshTable();
+    await Promise.all(svcs.map(async function(svc){
+      var els = await queryOverpass(currentRef.lat,currentRef.lng,currentRadius,svc.tags);
+      allData[svc.id]=els.map(function(e){
+        return Object.assign({},e,{dist:haversine(currentRef.lat,currentRef.lng,e.lat,e.lon)});
+      }).sort(function(a,b){return a.dist-b.dist;});
+      done++; setLoading('Chargement des services... ('+done+'/'+svcs.length+')');
+      refreshTable(); refreshMarkers();
+    }));
+    setLoading(null);
+    var pts=[]; Object.values(allData).forEach(function(arr){arr.forEach(function(e){if(e.lat&&e.lon)pts.push([e.lat,e.lon]);});});
+    if (pts.length) map.fitBounds(L.latLngBounds([[currentRef.lat,currentRef.lng]].concat(pts)).pad(0.2));
+    document.getElementById('detail-content').innerHTML='Cliquez sur un émoji sur la carte ou dans le tableau pour voir les détails.';
+  }
+
+  async function setAddress(address) {
+    document.getElementById('addr-error').style.display='none';
+    document.getElementById('addr-display').textContent='Recherche en cours...';
+    document.getElementById('addr-quartier').textContent='';
+    setLoading('Géocodage de l\'adresse...');
+    var result = await geocode(address);
+    if (!result) {
+      document.getElementById('addr-display').textContent='Aucune adresse saisie';
+      document.getElementById('addr-error').style.display='block';
+      setLoading(null); return;
+    }
+    currentRef={lat:result.lat,lng:result.lng};
+    var geo = await reverseGeocode(result.lat,result.lng);
+    document.getElementById('addr-display').textContent=geo.street;
+    document.getElementById('addr-quartier').textContent=geo.quartier?'Quartier : '+geo.quartier:'';
+    document.getElementById('addr-form').style.display='none';
+    if (refMarker) map.removeLayer(refMarker);
+    refMarker=L.marker([result.lat,result.lng],{
+      icon:L.divIcon({html:'<div style="background:#ef4444;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 2px #ef4444"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]})
+    }).addTo(map).bindPopup(geo.street);
+    if (circleLayer) map.removeLayer(circleLayer);
+    circleLayer=L.circle([result.lat,result.lng],{radius:currentRadius,color:'#3B82F6',fillColor:'#3B82F6',fillOpacity:0.06,weight:1.5,dashArray:'6'}).addTo(map);
+    map.setView([result.lat,result.lng],15);
+    await loadAllServices();
+  }
+
+  document.getElementById('edit-btn').addEventListener('click',function(){
+    var f=document.getElementById('addr-form');
+    f.style.display=f.style.display==='none'?'block':'none';
+    if(f.style.display==='block') document.getElementById('addr-input').focus();
+  });
+  document.getElementById('addr-submit').addEventListener('click',function(){
+    var v=document.getElementById('addr-input').value.trim(); if(v) setAddress(v);
+  });
+  document.getElementById('addr-input').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){var v=e.target.value.trim();if(v)setAddress(v);}
+  });
+  document.querySelectorAll('.rayon-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.rayon-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active'); currentRadius=parseInt(btn.dataset.r);
+      if(circleLayer&&currentRef) circleLayer.setRadius(currentRadius);
+      if(currentRef) loadAllServices();
+    });
+  });
+
+  var params=new URLSearchParams(window.location.search);
+  var addrParam=params.get('addr');
+  if(addrParam){setAddress(addrParam);}
+  else{document.getElementById('addr-form').style.display='block';document.getElementById('addr-input').focus();}
+});
+</script>
+</body>
+</html>
