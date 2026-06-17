@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carte d'accessibilité aux services de proximité</title>
+  <title>Mon logement et les services du quotidien</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -11,6 +11,7 @@
     html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
     body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f0f4f8; }
     #page-title { text-align: center; font-size: 17px; font-weight: 700; color: #fff; padding: 14px 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); flex-shrink: 0; letter-spacing: 0.3px; box-shadow: 0 2px 12px rgba(30,58,95,0.25); }
+    #page-subtitle { font-size: 11px; font-weight: 400; opacity: 0.75; margin-top: 4px; letter-spacing: 0.2px; }
     #main { display: flex; flex-direction: row; flex: 1; min-height: 0; overflow: hidden; }
     #map-container { flex: 1; min-width: 0; position: relative; }
     #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
@@ -61,35 +62,35 @@
 </head>
 <body>
 
-<div id="page-title">Carte d'accessibilité aux services de proximité</div>
+<div id="page-title">Mon logement et les services du quotidien<div id="page-subtitle">Explorez l'accessibilité aux services autour de votre adresse</div></div>
 
 <div id="main">
   <div id="map-container"><div id="map"></div></div>
   <div id="sidebar">
     <div id="addr-box">
       <div id="addr-header">
-        <div id="addr-header-left">📍 Adresse</div>
+        <div id="addr-header-left">📍 Mon logement</div>
         <button id="edit-btn" title="Modifier l'adresse">✏️</button>
       </div>
       <div id="addr-display">Aucune adresse saisie</div>
       <div id="addr-quartier"></div>
       <div id="addr-form">
-        <input id="addr-input" type="text" placeholder="Ex: Avenue de Cour 15, Lausanne" />
+        <input id="addr-input" type="text" placeholder="Entrez une adresse (ex: Avenue de Cour 15, Lausanne)" />
         <button id="addr-submit">Rechercher</button>
         <div id="addr-error">Adresse introuvable, essayez d'être plus précis.</div>
       </div>
     </div>
     <div id="loading-bar"><div class="spinner"></div><span id="loading-text">Chargement...</span></div>
     <div id="detail-box">
-      <div id="detail-label">Détails du service sélectionné</div>
-      <div id="detail-content">Saisissez une adresse pour voir les services à proximité.</div>
+      <div id="detail-label">Quel est l'établissement le plus proche ?</div>
+      <div id="detail-content">Saisissez l'adresse de votre logement pour découvrir les services à proximité.</div>
     </div>
   </div>
 </div>
 
 <div id="bottom">
   <div id="bottom-header">
-    <div id="bottom-title">Services de proximité et indicateurs locaux</div>
+    <div id="bottom-title">Quels services à proximité de mon logement ?</div>
     <div id="rayon-row">
       <span id="rayon-label">Rayon d'analyse :</span>
       <button class="rayon-btn" data-r="250">250 m</button>
@@ -98,7 +99,7 @@
     </div>
   </div>
   <div id="cats-grid">
-    <div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>
+    <div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Renseignez une adresse pour explorer les services du quartier.</div>
   </div>
 </div>
 
@@ -127,7 +128,7 @@ window.addEventListener('DOMContentLoaded', function () {
       { id: 'super',   label: 'Supermarché',    emoji: '🛒', tags: [['shop','supermarket'],['shop','convenience'],['shop','grocery']] }
     ]},
     { id: 'resto', label: 'Restauration', color: '#ef4444', svcs: [
-      { id: 'restau',  label: 'Restaurant',     emoji: '🍽️', tags: [['amenity','restaurant'],['amenity','fast_food']] },
+      { id: 'restau',  label: 'Restaurant',     emoji: '🍽️', tags: [['amenity','restaurant']] },
       { id: 'boulang', label: 'Boulangerie',    emoji: '🥐', tags: [['shop','bakery']] }
     ]},
     { id: 'loisir', label: 'Environnement & loisirs', color: '#8b5cf6', svcs: [
@@ -155,8 +156,8 @@ window.addEventListener('DOMContentLoaded', function () {
     allData = {}; currentRef = null; selectedSvcId = null; currentCity = 'Lausanne';
     document.getElementById('addr-display').textContent = 'Aucune adresse saisie';
     document.getElementById('addr-quartier').textContent = '';
-    document.getElementById('detail-content').innerHTML = 'Saisissez une adresse pour voir les services à proximité.';
-    document.getElementById('cats-grid').innerHTML = '<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>';
+    document.getElementById('detail-content').innerHTML = 'Saisissez l'adresse de votre logement pour découvrir les services à proximité.';
+    document.getElementById('cats-grid').innerHTML = '<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Renseignez une adresse pour explorer les services du quartier.</div>';
     map.setView(VAUD_CENTER, VAUD_ZOOM);
   }
 
@@ -320,7 +321,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
   function refreshTable() {
     var grid=document.getElementById('cats-grid');
-    if (!currentRef) { grid.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>'; return; }
+    if (!currentRef) { grid.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Renseignez une adresse pour explorer les services du quartier.</div>'; return; }
     grid.innerHTML=CATEGORIES.map(function(cat){
       return '<div class="cat-col"><div class="cat-title" style="color:'+cat.color+'">'+cat.label+'</div>'+
         cat.svcs.map(function(svc){
@@ -365,7 +366,7 @@ window.addEventListener('DOMContentLoaded', function () {
     refreshTable(); refreshMarkers();
     var pts=[]; Object.values(allData).forEach(function(arr){arr.forEach(function(e){if(e.lat&&e.lon)pts.push([e.lat,e.lon]);});});
     if (pts.length) map.fitBounds(L.latLngBounds([[currentRef.lat,currentRef.lng]].concat(pts)).pad(0.2));
-    document.getElementById('detail-content').innerHTML='Cliquez sur un émoji sur la carte ou dans le tableau pour voir les détails.';
+    document.getElementById('detail-content').innerHTML='Cliquez sur un service dans le tableau ou sur la carte pour en savoir plus.';
   }
 
   async function setAddress(address) {
