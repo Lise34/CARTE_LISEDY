@@ -263,10 +263,9 @@ window.addEventListener('DOMContentLoaded', function () {
     var svc = getSvcById(svcId), d = allData[svcId];
     if (!svc||!d||!d.length) return;
     var top = d[0];
-    // Lien Google Maps : si le lieu a un nom et une adresse, cherche par nom ; sinon coordonnées GPS
-    var hasAddr = top.tags['addr:street'] && top.name !== 'Sans nom';
-    var gmaps = hasAddr
-      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(top.name + ' ' + top.tags['addr:street'] + ' ' + (top.tags['addr:city']||'Lausanne'))
+    // Google Maps : par nom pour avoir la fiche (horaires, avis), par coordonnées GPS si pas de nom
+    var gmaps = (top.name && top.name !== 'Sans nom')
+      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(top.name + ' Lausanne')
       : 'https://www.google.com/maps/search/?api=1&query=' + top.lat + ',' + top.lon;
     var addrStr = top.tags['addr:street']
       ? ((top.tags['addr:housenumber']||'')+' '+top.tags['addr:street']+', '+(top.tags['addr:city']||'')).trim()
