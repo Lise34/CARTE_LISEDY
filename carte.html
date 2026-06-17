@@ -126,10 +126,10 @@ window.addEventListener('DOMContentLoaded', function () {
     ]},
     { id: 'resto', label: 'Restauration', color: '#ef4444', svcs: [
       { id: 'restau',  label: 'Restaurant',     emoji: '🍽️', tags: [['amenity','restaurant'],['amenity','fast_food']] },
-      { id: 'boulang', label: 'Boulangerie',    emoji: '🥐', tags: [['shop','bakery'],['shop','pastry']] }
+      { id: 'boulang', label: 'Boulangerie',    emoji: '🥐', tags: [['shop','bakery']] }
     ]},
     { id: 'loisir', label: 'Environnement & loisirs', color: '#8b5cf6', svcs: [
-      { id: 'parc',    label: 'Parc',           emoji: '🌳', tags: [['leisure','park']] },
+      { id: 'parc',    label: 'Parc',           emoji: '🌳', tags: [['leisure','park'],['leisure','playground']] },
       { id: 'sport',   label: 'Salle de sport', emoji: '🏋️', tags: [['leisure','fitness_centre'],['leisure','sports_centre']] }
     ]}
   ];
@@ -229,7 +229,11 @@ window.addEventListener('DOMContentLoaded', function () {
         var match = svc.tags.some(function(t){ return e.tags[t[0]] === t[1]; });
         if (!match) return;
         var name = e.tags.name || e.tags['name:fr'] || '';
-        if (!name) name = 'Sans nom';
+        // Filtrer les parcs sans nom (gazon, espaces verts) mais garder les aires de jeux
+        // Filtrer aussi les salles de sport sans nom (équipements extérieurs)
+        if (svc.id === 'parc' && !name && e.tags.leisure !== 'playground') return;
+        if (svc.id === 'sport' && !name) return;
+        if (!name) name = (e.tags.leisure === 'playground') ? 'Aire de jeux' : 'Sans nom';
         var key = svc.id + '_' + name + (name === 'Sans nom' ? '_' + elat.toFixed(3) + '_' + elon.toFixed(3) : '');
         if (seen[key]) return;
         seen[key] = true;
