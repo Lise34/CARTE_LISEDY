@@ -177,7 +177,7 @@ window.addEventListener('DOMContentLoaded', function () {
   async function geocode(address) {
     var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address) + '&countrycodes=ch&limit=1&accept-language=fr';
     try {
-      var res = await fetch(url, { headers: { 'User-Agent': 'CarteImmo/1.0' } });
+      var res = await fetch(url);
       var data = await res.json();
       if (!data.length) return null;
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
@@ -187,7 +187,7 @@ window.addEventListener('DOMContentLoaded', function () {
   async function reverseGeocode(lat, lng) {
     var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16&addressdetails=1&accept-language=fr';
     try {
-      var res = await fetch(url, { headers: { 'User-Agent': 'CarteImmo/1.0' } });
+      var res = await fetch(url);
       var data = await res.json();
       var a = data.address || {};
       var road = a.road || '', num = a.house_number || '';
@@ -398,8 +398,9 @@ window.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('edit-btn').addEventListener('click',function(){
     var f=document.getElementById('addr-form');
-    f.style.display=f.style.display==='none'?'block':'none';
-    if(f.style.display==='block') document.getElementById('addr-input').focus();
+    var visible = f.style.display==='block';
+    f.style.display = visible ? 'none' : 'block';
+    if(!visible) document.getElementById('addr-input').focus();
   });
   document.getElementById('addr-submit').addEventListener('click',function(){
     var v=document.getElementById('addr-input').value.trim();
