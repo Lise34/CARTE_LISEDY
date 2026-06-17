@@ -229,9 +229,6 @@ window.addEventListener('DOMContentLoaded', function () {
         var match = svc.tags.some(function(t){ return e.tags[t[0]] === t[1]; });
         if (!match) return;
         var name = e.tags.name || e.tags['name:fr'] || '';
-        // Pour les parcs et salles de sport, ignorer les éléments sans nom
-        // (petits espaces verts, équipements de plein air qui ne sont pas de vrais parcs)
-        if ((svc.id === 'parc' || svc.id === 'sport') && !name) return;
         if (!name) name = 'Sans nom';
         var key = svc.id + '_' + name + (name === 'Sans nom' ? '_' + elat.toFixed(3) + '_' + elon.toFixed(3) : '');
         if (seen[key]) return;
