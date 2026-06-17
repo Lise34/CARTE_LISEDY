@@ -7,54 +7,56 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    #page-title { text-align: center; font-size: 18px; font-weight: 600; color: #222; padding: 10px 0 8px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    html, body { height: 100%; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f0f4f8; }
+    #page-title { text-align: center; font-size: 17px; font-weight: 700; color: #fff; padding: 14px 0; background: linear-gradient(135deg, #1e3a5f, #2563eb); flex-shrink: 0; letter-spacing: 0.3px; box-shadow: 0 2px 12px rgba(30,58,95,0.25); }
     #main { display: flex; flex-direction: row; flex: 1; min-height: 0; overflow: hidden; }
     #map-container { flex: 1; min-width: 0; position: relative; }
     #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
-    #sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 1px solid #e0e0e0; background: #fff; overflow-y: auto; }
-    #addr-box { background: #fff5f5; border-bottom: 1px solid #fcc; padding: 12px 14px; flex-shrink: 0; }
-    #addr-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    #addr-header-left { font-size: 13px; font-weight: 600; color: #c0392b; }
-    #edit-btn { background: none; border: none; cursor: pointer; font-size: 15px; color: #aaa; padding: 0; }
-    #edit-btn:hover { color: #555; }
-    #addr-display { font-size: 12px; color: #333; margin-bottom: 2px; }
-    #addr-quartier { font-size: 11px; color: #888; }
-    #addr-form { display: none; margin-top: 8px; }
-    #addr-input { width: 100%; font-size: 12px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; outline: none; box-sizing: border-box; }
-    #addr-input:focus { border-color: #3B82F6; }
-    #addr-submit { width: 100%; font-size: 12px; padding: 5px 0; background: #3B82F6; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    #addr-submit:hover { background: #2563eb; }
-    #addr-error { font-size: 11px; color: #e53e3e; margin-top: 4px; display: none; }
-    #loading-bar { display: none; background: #fffbeb; border-bottom: 1px solid #fcd34d; padding: 6px 14px; font-size: 11px; color: #92400e; flex-shrink: 0; align-items: center; gap: 8px; }
+    #sidebar { width: 270px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; background: #fff; overflow-y: auto; }
+    #addr-box { background: linear-gradient(135deg, #fef2f2, #fff1f2); border-bottom: 1px solid #fecaca; padding: 14px 16px; flex-shrink: 0; }
+    #addr-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    #addr-header-left { font-size: 12px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.5px; }
+    #edit-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #94a3b8; padding: 2px; border-radius: 4px; transition: all 0.2s; }
+    #edit-btn:hover { color: #475569; background: #f1f5f9; }
+    #addr-display { font-size: 12px; color: #1e293b; margin-bottom: 2px; font-weight: 500; }
+    #addr-quartier { font-size: 11px; color: #64748b; }
+    #addr-form { display: none; margin-top: 10px; }
+    #addr-input { width: 100%; font-size: 12px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 6px; outline: none; box-sizing: border-box; transition: border 0.2s, box-shadow 0.2s; font-family: inherit; }
+    #addr-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    #addr-submit { width: 100%; font-size: 12px; font-weight: 600; padding: 8px 0; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; font-family: inherit; }
+    #addr-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    #addr-submit:active { transform: translateY(0); }
+    #addr-error { font-size: 11px; color: #dc2626; margin-top: 4px; display: none; }
+    #loading-bar { display: none; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-bottom: 1px solid #fcd34d; padding: 8px 16px; font-size: 11px; color: #92400e; flex-shrink: 0; align-items: center; gap: 8px; }
     #loading-bar.visible { display: flex; }
-    .spinner { width: 12px; height: 12px; border: 2px solid #fcd34d; border-top-color: #92400e; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    .spinner { width: 14px; height: 14px; border: 2px solid #fcd34d; border-top-color: #92400e; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #detail-box { padding: 12px 14px; flex: 1; }
-    #detail-label { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
-    #detail-content { font-size: 12px; color: #555; line-height: 1.6; }
-    .detail-svc-name { font-size: 13px; font-weight: 600; color: #222; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-    .detail-row { color: #555; margin-bottom: 3px; }
-    .detail-row span { color: #888; }
-    .detail-gmaps { font-size: 12px; color: #3B82F6; text-decoration: none; display: flex; align-items: center; gap: 4px; margin-top: 8px; }
-    .detail-gmaps:hover { text-decoration: underline; }
-    #bottom { background: #fff; border-top: 1px solid #e0e0e0; padding: 10px 14px 12px; flex-shrink: 0; }
+    #detail-box { padding: 14px 16px; flex: 1; }
+    #detail-label { font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+    #detail-content { font-size: 12px; color: #475569; line-height: 1.7; }
+    .detail-svc-name { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .detail-row { color: #475569; margin-bottom: 4px; font-size: 12px; }
+    .detail-row span { color: #94a3b8; font-weight: 500; }
+    .detail-gmaps { font-size: 12px; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 6px 12px; background: #eff6ff; border-radius: 6px; font-weight: 500; transition: background 0.2s; }
+    .detail-gmaps:hover { background: #dbeafe; text-decoration: none; }
+    #bottom { background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 16px 10px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
     #bottom-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    #bottom-title { font-size: 13px; font-weight: 600; color: #222; }
+    #bottom-title { font-size: 12px; font-weight: 700; color: #1e293b; }
     #rayon-row { display: flex; align-items: center; gap: 6px; }
-    #rayon-label { font-size: 11px; color: #888; }
-    .rayon-btn { font-size: 11px; padding: 3px 10px; border: 1px solid #ccc; border-radius: 5px; background: white; color: #555; cursor: pointer; }
-    .rayon-btn.active { background: #3B82F6; color: white; border-color: #3B82F6; font-weight: 600; }
-    .rayon-btn:hover:not(.active) { background: #f0f0f0; }
-    #cats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .cat-title { font-size: 11px; font-weight: 600; margin-bottom: 5px; }
-    .svc-entry { margin-bottom: 7px; }
-    .svc-line { font-size: 10px; color: #333; cursor: pointer; display: flex; align-items: flex-start; gap: 3px; line-height: 1.3; }
-    .svc-line:hover { color: #3B82F6; }
-    .svc-line.selected { color: #3B82F6; font-weight: 600; }
-    .svc-count { font-size: 9px; color: #aaa; font-style: italic; margin-top: 2px; }
-    .svc-empty { font-size: 10px; color: #bbb; font-style: italic; }
+    #rayon-label { font-size: 10px; color: #94a3b8; font-weight: 500; }
+    .rayon-btn { font-size: 11px; padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 20px; background: white; color: #64748b; cursor: pointer; font-weight: 500; transition: all 0.2s; font-family: inherit; }
+    .rayon-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border-color: transparent; font-weight: 600; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+    .rayon-btn:hover:not(.active) { background: #f8fafc; border-color: #94a3b8; }
+    #cats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .cat-title { font-size: 10px; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .svc-entry { margin-bottom: 5px; }
+    .svc-line { font-size: 9px; color: #334155; cursor: pointer; display: flex; align-items: flex-start; gap: 4px; line-height: 1.3; padding: 3px 4px; border-radius: 4px; transition: background 0.15s; }
+    .svc-line:hover { color: #2563eb; background: #f0f7ff; }
+    .svc-line.selected { color: #2563eb; font-weight: 600; background: #eff6ff; }
+    .svc-count { font-size: 8px; color: #94a3b8; font-style: italic; margin-top: 1px; padding-left: 4px; }
+    .svc-empty { font-size: 9px; color: #cbd5e1; font-style: italic; }
   </style>
 </head>
 <body>
@@ -144,6 +146,19 @@ window.addEventListener('DOMContentLoaded', function () {
   var currentRadius = 500;
   var currentRef = null;
   var selectedSvcId = null;
+  var currentCity = 'Lausanne';
+
+  function resetMap() {
+    if (refMarker) { map.removeLayer(refMarker); refMarker = null; }
+    if (circleLayer) { map.removeLayer(circleLayer); circleLayer = null; }
+    markers.forEach(function(m){ map.removeLayer(m); }); markers = [];
+    allData = {}; currentRef = null; selectedSvcId = null; currentCity = 'Lausanne';
+    document.getElementById('addr-display').textContent = 'Aucune adresse saisie';
+    document.getElementById('addr-quartier').textContent = '';
+    document.getElementById('detail-content').innerHTML = 'Saisissez une adresse pour voir les services à proximité.';
+    document.getElementById('cats-grid').innerHTML = '<div style="grid-column:1/-1;font-size:11px;color:#bbb;font-style:italic;">Saisissez une adresse pour afficher les services.</div>';
+    map.setView(VAUD_CENTER, VAUD_ZOOM);
+  }
 
   map = L.map('map').setView(VAUD_CENTER, VAUD_ZOOM);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -179,8 +194,8 @@ window.addEventListener('DOMContentLoaded', function () {
       var postcode = a.postcode || '';
       var suburb = a.suburb || a.neighbourhood || a.quarter || '';
       var street = road ? (num ? num + ' ' + road : road) + ', ' + postcode + ' ' + city : (data.display_name||'').split(',').slice(0,2).join(',');
-      return { street: street.trim(), quartier: (suburb ? suburb + ', ' + city : city).trim() };
-    } catch(e) { return { street: lat.toFixed(4)+','+lng.toFixed(4), quartier: '' }; }
+      return { street: street.trim(), quartier: (suburb ? suburb + ', ' + city : city).trim(), city: city };
+    } catch(e) { return { street: lat.toFixed(4)+','+lng.toFixed(4), quartier: '', city: '' }; }
   }
 
   function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
@@ -229,6 +244,14 @@ window.addEventListener('DOMContentLoaded', function () {
         var match = svc.tags.some(function(t){ return e.tags[t[0]] === t[1]; });
         if (!match) return;
         var name = e.tags.name || e.tags['name:fr'] || '';
+        // Filtrer les écoles non obligatoires (ateliers, auto-écoles, cours privés)
+        if (svc.id === 'ecole' && name) {
+          var nl = name.toLowerCase();
+          if (nl.indexOf('céramique')!==-1||nl.indexOf('poterie')!==-1||nl.indexOf('auto-école')!==-1||
+              nl.indexOf('auto école')!==-1||nl.indexOf('conduite')!==-1||nl.indexOf('danse')!==-1||
+              nl.indexOf('yoga')!==-1||nl.indexOf('pilates')!==-1||nl.indexOf('musique')!==-1||
+              nl.indexOf('cuisine')!==-1||nl.indexOf('langue')!==-1) return;
+        }
         // Filtrer les parcs sans nom (gazon, espaces verts) mais garder les aires de jeux
         // Filtrer aussi les salles de sport sans nom (équipements extérieurs)
         if (svc.id === 'parc' && !name && e.tags.leisure !== 'playground') return;
@@ -244,8 +267,8 @@ window.addEventListener('DOMContentLoaded', function () {
   }
 
   function makeEmojiIcon(emoji, highlighted) {
-    var size = highlighted?32:26, bg = highlighted?'#3B82F6':'white';
-    var border = highlighted?'#1d4ed8':'#999', fs = highlighted?15:12;
+    var size = highlighted?36:30, bg = highlighted?'#3B82F6':'white';
+    var border = highlighted?'#1d4ed8':'#999', fs = highlighted?17:14;
     return L.divIcon({
       html: '<div style="background:'+bg+';border:2px solid '+border+';border-radius:50%;width:'+size+'px;height:'+size+'px;display:flex;align-items:center;justify-content:center;font-size:'+fs+'px;box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:pointer">'+emoji+'</div>',
       className:'', iconSize:[size,size], iconAnchor:[size/2,size/2]
@@ -266,7 +289,7 @@ window.addEventListener('DOMContentLoaded', function () {
     var top = d[0];
     // Google Maps : par nom + type de service pour trouver le bon lieu, GPS si pas de nom
     var gmaps = (top.name && top.name !== 'Sans nom')
-      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(svc.label + ' ' + top.name + ' Lausanne')
+      ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(svc.label + ' ' + top.name + ' ' + currentCity)
       : 'https://www.google.com/maps/search/?api=1&query=' + top.lat + ',' + top.lon;
     var addrStr = top.tags['addr:street']
       ? ((top.tags['addr:housenumber']||'')+' '+top.tags['addr:street']+', '+(top.tags['addr:city']||'')).trim()
@@ -360,6 +383,7 @@ window.addEventListener('DOMContentLoaded', function () {
     var geo = await reverseGeocode(result.lat,result.lng);
     document.getElementById('addr-display').textContent=geo.street;
     document.getElementById('addr-quartier').textContent=geo.quartier?'Quartier : '+geo.quartier:'';
+    currentCity = geo.city || 'Lausanne';
     document.getElementById('addr-form').style.display='none';
     if (refMarker) map.removeLayer(refMarker);
     refMarker=L.marker([result.lat,result.lng],{
@@ -377,10 +401,11 @@ window.addEventListener('DOMContentLoaded', function () {
     if(f.style.display==='block') document.getElementById('addr-input').focus();
   });
   document.getElementById('addr-submit').addEventListener('click',function(){
-    var v=document.getElementById('addr-input').value.trim(); if(v) setAddress(v);
+    var v=document.getElementById('addr-input').value.trim();
+    if(v) setAddress(v); else resetMap();
   });
   document.getElementById('addr-input').addEventListener('keydown',function(e){
-    if(e.key==='Enter'){var v=e.target.value.trim();if(v)setAddress(v);}
+    if(e.key==='Enter'){var v=e.target.value.trim();if(v)setAddress(v);else resetMap();}
   });
   document.querySelectorAll('.rayon-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
